@@ -410,7 +410,7 @@ class Botri_Elementor_Filters {
             if ( strpos( $key, 'filter_' ) === 0 ) continue;
             if ( empty( $value ) ) continue;
 
-            $tax_real = str_starts_with( $key, 'pa_' ) ? $key : 'pa_' . sanitize_key( $key );
+            $tax_real = ( 0 === strpos( $key, 'pa_' ) ) ? $key : 'pa_' . sanitize_key( $key );
             $term_slugs = array_map( 'sanitize_title', explode( ',', $value ) );
 
             if ( taxonomy_exists( $tax_real ) ) {

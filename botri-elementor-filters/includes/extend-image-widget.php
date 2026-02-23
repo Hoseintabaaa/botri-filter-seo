@@ -372,7 +372,7 @@ class Botri_Extend_Image_Widget {
             
             if ( empty( $taxonomy ) || empty( $terms_ids ) ) continue;
             
-            $tax_real = str_starts_with( $taxonomy, 'pa_' ) ? $taxonomy : 'pa_' . $taxonomy;
+            $tax_real = ( 0 === strpos( $taxonomy, 'pa_' ) ) ? $taxonomy : 'pa_' . $taxonomy;
             $tax_key = str_replace( 'pa_', '', $tax_real );
             
             foreach ( $terms_ids as $tid ) {

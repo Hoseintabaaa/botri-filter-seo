@@ -205,7 +205,7 @@ add_action('plugins_loaded', function(){
                 if (in_array($key, $skip_keys, true)) continue;
                 if (empty($value)) continue;
 
-                $tax_real  = str_starts_with($key, 'pa_') ? $key : 'pa_' . sanitize_key($key);
+                $tax_real  = (0 === strpos($key, 'pa_')) ? $key : 'pa_' . sanitize_key($key);
                 $term_slugs = array_map('sanitize_title', explode(',', $value));
 
                 if (taxonomy_exists($tax_real)) {
@@ -496,7 +496,7 @@ add_action('plugins_loaded', function(){
 
         /** --- ابزارهای داخلی --- **/
         private function normalize_tax($tax) {
-            return str_starts_with($tax, 'pa_') ? $tax : 'pa_' . $tax;
+            return (0 === strpos($tax, 'pa_')) ? $tax : 'pa_' . $tax;
         }
 
         private function query_key($tax) {
@@ -932,7 +932,7 @@ add_action('plugins_loaded', function(){
                 if (in_array($key, ['orderby','min_price','max_price','paged','product-page','s'])) continue;
                 if (empty($value)) continue;
 
-                $tax_real = str_starts_with($key, 'pa_') ? $key : 'pa_' . $key;
+                $tax_real = (0 === strpos($key, 'pa_')) ? $key : 'pa_' . $key;
                 $term_slugs = array_map('sanitize_title', explode(',', $value));
 
                 if (taxonomy_exists($tax_real)) {

@@ -216,7 +216,7 @@ class Botri_Elementor_SEO_H1_Widget extends \Elementor\Widget_Base {
             if ( empty( $tax_input ) || empty( $term ) || empty( $cats ) ) continue;
             if ( ! in_array( $cat->term_id, $cats, true ) ) continue;
 
-            $tax_real = str_starts_with( $tax_input, 'pa_' ) ? $tax_input : 'pa_' . $tax_input;
+            $tax_real = ( 0 === strpos( $tax_input, 'pa_' ) ) ? $tax_input : 'pa_' . $tax_input;
             $q_key    = ltrim( preg_replace( '/^pa_/', '', $tax_real ) );
 
             if ( isset( $_GET[ $q_key ] ) && sanitize_title( $_GET[ $q_key ] ) === $term ) {

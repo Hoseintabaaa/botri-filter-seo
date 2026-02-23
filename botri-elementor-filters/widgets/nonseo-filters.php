@@ -195,7 +195,7 @@ class Botri_Elementor_NonSEO_Filters_Widget extends \Elementor\Widget_Base {
             $cats = (array) get_post_meta( $r->ID, '_cats', true );
 
             if ( in_array( $cat->term_id, $cats ) && $tax_input && $term ) {
-                $tax_real = str_starts_with( $tax_input, 'pa_' ) ? $tax_input : 'pa_' . $tax_input;
+                $tax_real = ( 0 === strpos( $tax_input, 'pa_' ) ) ? $tax_input : 'pa_' . $tax_input;
                 $q_key = ltrim( preg_replace( '/^pa_/', '', $tax_real ) );
 
                 $term_obj = get_term_by( 'slug', $term, $tax_real );
@@ -237,7 +237,7 @@ class Botri_Elementor_NonSEO_Filters_Widget extends \Elementor\Widget_Base {
             }
 
             if ( $should_show && $tax_input ) {
-                $tax_real = str_starts_with( $tax_input, 'pa_' ) ? $tax_input : 'pa_' . $tax_input;
+                $tax_real = ( 0 === strpos( $tax_input, 'pa_' ) ) ? $tax_input : 'pa_' . $tax_input;
                 $q_key = ltrim( preg_replace( '/^pa_/', '', $tax_real ) );
                 $label = get_taxonomy( $tax_real )->label ?? $q_key;
                 
