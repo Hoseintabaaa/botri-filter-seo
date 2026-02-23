@@ -9,6 +9,22 @@ class Botri_Elementor_SEO_Content_Widget extends \Elementor\Widget_Base {
     public function get_categories() { return [ 'woocommerce-elements' ]; }
     public function get_keywords()   { return [ 'botri', 'seo', 'content', 'description', 'filter' ]; }
 
+    /**
+     * ✅ FIX v2.6: جلوگیری از کش شدن ویجت در المنتور
+     */
+    public function get_stack_runtime_config() {
+        return [
+            'is_dynamic' => true,
+        ];
+    }
+
+    /**
+     * ✅ FIX v2.6: سیگنال به المنتور برای عدم کش خروجی HTML
+     */
+    protected function is_dynamic_content() {
+        return true;
+    }
+
     protected function register_controls() {
         $this->start_controls_section( 'section_content', [
             'label' => 'تنظیمات محتوا',
@@ -132,6 +148,7 @@ class Botri_Elementor_SEO_Content_Widget extends \Elementor\Widget_Base {
             'numberposts'   => -1,
             'post_status'   => 'publish',
             'no_found_rows' => true,
+            'cache_results' => false, // ضد کش
         ] );
 
         foreach ( $rules as $r ) {

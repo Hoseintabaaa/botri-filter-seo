@@ -23,6 +23,22 @@ class Botri_Elementor_SEO_H1_Widget extends \Elementor\Widget_Base {
         return [ 'botri', 'seo', 'h1', 'heading', 'filter' ];
     }
 
+    /**
+     * ✅ FIX v2.6: جلوگیری از کش شدن ویجت در المنتور
+     */
+    public function get_stack_runtime_config() {
+        return [
+            'is_dynamic' => true,
+        ];
+    }
+
+    /**
+     * ✅ FIX v2.6: سیگنال به المنتور برای عدم کش خروجی HTML
+     */
+    protected function is_dynamic_content() {
+        return true;
+    }
+
     protected function register_controls() {
         $this->start_controls_section(
             'section_content',
@@ -117,21 +133,32 @@ class Botri_Elementor_SEO_H1_Widget extends \Elementor\Widget_Base {
 
     protected function render() {
         $settings = $this->get_settings_for_display();
-        
+
+        // در ادمین المنتور
+        if ( \Elementor\Plugin::$instance->editor->is_edit_mode() ) {
+            $html_tag = $settings['html_tag'];
+            printf('<%1$s class="botri-seo-h1" style="opacity: 0.6; border: 1px dashed #ccc; padding: 5px;">%2$s</%1$s>',
+                tag_escape($html_tag),
+                'عنوان H1 داینامیک (در سایت نمایش داده می‌شود)'
+            );
+            return;
+        }
+
         if ( ! is_product_category() && ! is_shop() ) {
-            if ( \Elementor\Plugin::$instance->editor->is_edit_mode() ) {
-                echo '<div class="elementor-alert elementor-alert-warning">';
-                echo 'این ویجت فقط در صفحات دسته‌بندی محصولات نمایش داده می‌شود.';
-                echo '</div>';
-            }
             return;
         }
 
         $h1 = '';
 
-        // ⚠️ CRITICAL FIX: دریافت H1 به صورت مستقیم در همین لحظه
-        // بدون استفاده از کش یا فیلتر قبلی
-        $h1 = apply_filters( 'botri_seo_h1', '' );
+        // ✅ FIX v2.6: دریافت مستقیم برای اطمینان 100% از عدم کش
+        if ( is_product_category() ) {
+            $h1 = $this->get_h1_direct();
+        }
+
+        // اگر مستقیم پیدا نشد، از فیلتر (runtime) استفاده کن
+        if ( empty( $h1 ) ) {
+            $h1 = apply_filters( 'botri_seo_h1', '' );
+        }
 
         // اگر خالی بود، از fallback یا عنوان دسته استفاده کن
         if ( empty( $h1 ) ) {
@@ -162,6 +189,43 @@ class Botri_Elementor_SEO_H1_Widget extends \Elementor\Widget_Base {
             esc_html( $h1 ),
             time()
         );
+    }
+
+    /**
+     * ✅ FIX v2.6: دریافت H1 مستقیم از دیتابیس (ضد کش)
+     */
+    private function get_h1_direct() {
+        if ( ! is_product_category() ) return '';
+
+        $cat = get_queried_object();
+        if ( ! $cat || ! isset( $cat->term_id ) ) return '';
+
+        $rules = get_posts( [
+            'post_type'     => 'filter_seo_rule',
+            'numberposts'   => -1,
+            'post_status'   => 'publish',
+            'no_found_rows' => true,
+            'cache_results' => false, // جلوگیری از کش WP_Query
+        ] );
+
+        foreach ( $rules as $r ) {
+            $tax_input = get_post_meta( $r->ID, '_taxonomy', true );
+            $term      = get_post_meta( $r->ID, '_term',     true );
+            $cats      = (array) get_post_meta( $r->ID, '_cats', true );
+
+            if ( empty( $tax_input ) || empty( $term ) || empty( $cats ) ) continue;
+            if ( ! in_array( $cat->term_id, $cats, true ) ) continue;
+
+            $tax_real = str_starts_with( $tax_input, 'pa_' ) ? $tax_input : 'pa_' . $tax_input;
+            $q_key    = ltrim( preg_replace( '/^pa_/', '', $tax_real ) );
+
+            if ( isset( $_GET[ $q_key ] ) && sanitize_title( $_GET[ $q_key ] ) === $term ) {
+                $val = get_post_meta( $r->ID, '_h1', true );
+                if ( ! empty( $val ) ) return $val;
+            }
+        }
+
+        return '';
     }
 
     protected function content_template() {
