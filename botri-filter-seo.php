@@ -165,6 +165,7 @@ add_action('plugins_loaded', function(){
             
             $paged    = isset($_POST['paged'])    ? intval($_POST['paged'])    : 2;
             $category = isset($_POST['category']) ? intval($_POST['category']) : 0;
+            $wd_hover = isset($_POST['wd_hover']) ? sanitize_key($_POST['wd_hover']) : '';
 
             // ✅ FIX: محاسبه صحیح offset
             // صفحه اول (main query): 12 محصول
@@ -262,21 +263,25 @@ add_action('plugins_loaded', function(){
 
             ob_start();
             if ($query->have_posts()) {
-                // ✅ FIX v2.5: تنظیم کامل WooCommerce loop context
-                // این باید دقیقاً همان چیزی باشد که صفحه اصلی shop تنظیم می‌کند
-                // تا Woodmart همان HTML structure را رندر کند
+                // ✅ FIX v2.6: تنظیم کامل WooCommerce loop context و Woodmart Hover
                 
                 // ابتدا loop قبلی را reset کن
                 wc_reset_loop();
                 
+                // تنظیم متغیرهای جهانی وودمارت برای حفظ ظاهر
+                if (!empty($wd_hover)) {
+                    global $woodmart_loop;
+                    $woodmart_loop['hover'] = $wd_hover;
+                }
+
                 // تنظیم loop properties برای shop/archive context
                 wc_setup_loop([
                     'name'         => '',          // نه shortcode، نه widget - archive معمولی
                     'columns'      => wc_get_default_products_per_row(),
                     'is_shortcode' => false,
                     'is_paginated' => false,
-                    'is_search'    => false,
-                    'is_filtered'  => false,
+                    'is_search'    => !empty($get_filters) || !empty($tax_query),
+                    'is_filtered'  => !empty($get_filters) || !empty($tax_query),
                     'total'        => $query->found_posts,
                     'total_pages'  => 1,
                     'per_page'     => $per_page_ajax,
@@ -285,7 +290,10 @@ add_action('plugins_loaded', function(){
 
                 while ($query->have_posts()) {
                     $query->the_post();
+                    // اضافه کردن کلاس برای شناسایی در JS
+                    echo '<div class="botri-ajax-item">';
                     wc_get_template_part('content', 'product');
+                    echo '</div>';
                 }
                 
                 // reset بعد از اتمام
@@ -505,7 +513,13 @@ add_action('plugins_loaded', function(){
             // ⚠️ حذف کش برای جلوگیری از مشکل محتوای تکراری
             // کش می‌تواند باعث شود محتوای یک صفحه در صفحه دیگر نمایش داده شود
             
-            $rules = get_posts(['post_type' => self::CPT, 'numberposts' => -1, 'post_status' => 'publish']);
+            $rules = get_posts([
+                'post_type' => self::CPT,
+                'numberposts' => -1,
+                'post_status' => 'publish',
+                'cache_results' => false, // ضد کش
+                'no_found_rows' => true
+            ]);
             
             $matched_rule = null;
             
@@ -534,12 +548,13 @@ add_action('plugins_loaded', function(){
 
         /** --- 🔥 اعمال متاتگ‌ها و محتوا - FIXED برای جلوگیری از تداخل --- **/
         public function apply_rule() {
-            if (!is_product_category()) return;
-            
-            // ⚠️ حذف فیلترهای قبلی برای جلوگیری از تداخل
+            // ✅ FIX v2.6: همیشه فیلترها را ریست کن (حتی اگر در دسته نیستیم)
+            // تا از نشت محتوا بین صفحات مختلف جلوگیری شود
             remove_all_filters('botri_seo_h1');
             remove_all_filters('botri_seo_content');
             
+            if (!is_product_category()) return;
+
             $rule = $this->get_matching_rule();
             if (!$rule) {
                 // اگر rule پیدا نشد، محتوای پیش‌فرض دسته نمایش داده می‌شه

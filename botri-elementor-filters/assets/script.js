@@ -335,9 +335,20 @@
                     console.log('✅ Loaded ' + $newItems.length + ' new products (selector: ' + itemSel + ')');
 
                     if ($newItems.length > 0) {
-                        // ✅ FIX v2.5: همگام‌سازی کلاس‌های Woodmart
-                        // مشکل: PHP در AJAX کلاس wd-hover-icons (غلط) می‌گذارد
-                        // درست: wd-hover-buttons-on-hover (از DOM اولین محصول می‌خوانیم)
+                        // ✅ FIX v2.6: حذف wrapper اضافی botri-ajax-item اگر وجود دارد
+                        $newItems.each(function() {
+                            if ($(this).hasClass('botri-ajax-item')) {
+                                var $realItem = $(this).children().first();
+                                $(this).replaceWith($realItem);
+                                // جایگزین کردن در مجموعه $newItems
+                            }
+                        });
+
+                        // بازخوانی مجدد آیتم‌ها بعد از حذف wrapper
+                        $newItems = $parsed.find(itemSel);
+                        if ($newItems.length === 0) $newItems = $parsed.filter(itemSel);
+
+                        // همگام‌سازی کلاس‌های Woodmart
                         var $ref = $container.find('li.product, div.product').first();
                         if ($ref.length) {
                             ['wd-hover-', 'wd-col-', 'wd-with-'].forEach(function(prefix) {
@@ -347,7 +358,7 @@
                                 $newItems.each(function() {
                                     $(this).removeClass(function(i, cls) {
                                         return (cls.match(pattern) || []).join(' ');
-                                    }).addClass(correctClass);
+                                    }).addClass(correctClass).addClass('botri-loaded');
                                 });
                             });
                         }
@@ -355,11 +366,17 @@
                         $newItems.appendTo($container);
 
                         // Re-init Woodmart
-                        $(document.body).trigger('wdShopPageInit');
-                        $(document.body).trigger('botri_products_loaded');
-                        if (typeof woodmart !== 'undefined' && typeof woodmart.initProductsGrid === 'function') {
-                            woodmart.initProductsGrid();
-                        }
+                        setTimeout(function() {
+                            $(document.body).trigger('wdShopPageInit');
+                            $(document.body).trigger('botri_products_loaded');
+                            if (typeof woodmart !== 'undefined' && typeof woodmart.initProductsGrid === 'function') {
+                                woodmart.initProductsGrid();
+                            }
+                            // اجرای مجدد انیمیشن‌های ظهور وودمارت
+                            if (typeof woodmart_settings !== 'undefined') {
+                                $(document.body).trigger('woodmart_products_loaded');
+                            }
+                        }, 100);
 
                         if (currentPage >= response.data.max_num_pages) {
                             hasMoreProducts = false;
